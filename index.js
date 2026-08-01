@@ -2118,7 +2118,11 @@ class webosTvDevice {
       .getCharacteristic(Characteristic.On)
       .onGet(this.getStatelessSwitchState.bind(this))
       .onSet((state) => {
-        setterFn(state);
+        // these switches emulate a momentary button, so only a write of true is an actual button press.
+        // a write of false (turning the switch off from a scene, an automation or siri) must not trigger the action again
+        if (state) {
+          setterFn(state);
+        }
       });
 
     this.setServiceConfiguredName(newStatelessSwitchService, name);
