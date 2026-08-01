@@ -1443,16 +1443,24 @@ class webosTvDevice {
 
   // remote sequence buttons
   setRemoteSequenceButtonState(state, remoteSeqDef) {
-    if (this.isTvOn()) {
+    if (state && this.isTvOn()) {
+      // do not start a new run while the previous one is still in progress, otherwise the runs stack up
+      if (remoteSeqDef.runningTimeout) {
+        this.logDebug(`Sequence ${remoteSeqDef.name} is still running. Ignoring button press!`);
+        this.resetRemoteSequenceButtons();
+        return;
+      }
+
       let curRemoteKeyNum = 0;
       let remoteKeyFunc = () => {
+        remoteSeqDef.runningTimeout = null;
         let curRemoteKey = remoteSeqDef.sequence[curRemoteKeyNum];
         this.lgTvCtrl.sendRemoteInputSocketCommand(curRemoteKey);
 
         if (curRemoteKeyNum < remoteSeqDef.sequence.length - 1) {
           let curInterval = remoteSeqDef.interval[curRemoteKeyNum] || remoteSeqDef.interval[remoteSeqDef.interval.length - 1];
           curRemoteKeyNum++;
-          setTimeout(remoteKeyFunc, curInterval);
+          remoteSeqDef.runningTimeout = setTimeout(remoteKeyFunc, curInterval);
         }
       };
       remoteKeyFunc();
